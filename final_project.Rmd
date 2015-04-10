@@ -1,0 +1,742 @@
+---
+title: "EDA final project"
+output:
+  html_document:
+    fig_height: 12
+    fig_width: 15
+---
+<script type="text/javascript" src="http://code.jquery.com/jquery-2.1.3.min.js">
+</script>
+<script type="text/javascript">
+function show_sub(sub){
+  $('#sub'+sub).toggle('show');
+  for(var i=1; i<=5; i++){
+    if(i!=sub){
+      $('#sub'+i).hide();
+    }
+  }
+}
+</script>
+<style>
+.main-container {
+  max-width: 1100px;
+  margin-auto;
+}
+.sub {
+  display: none;
+}
+</style>
+<h2>
+Name: Hicham Mallah
+<br />
+Email: hicham.mallah@gmail.com
+</h2>
+<div style="float: left; width: 25%">
+  <ul style="position: fixed; margin-top: -10px;">
+    <li><a href="#">Getting to know the data</a></li>
+    <li>
+      <a href="javascript:void(0);" onclick="show_sub(1)">
+      Plot and explore
+      </a>
+      <ul class="sub" id="sub1">
+        <li><a href="#counts_by_qualities">Counts by qualities</a></li>
+        <li><a href="#ggpairs">GGPairs plot</a></li>
+        <li><a href="#alcohol_counts">Alcohol counts</a></li>
+        <li><a href="#pH">Explore pH</a></li>
+        <li><a href="#qvsabyva">Quality, alcohol and volatile acidity</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="javascript:void(0);" onclick="show_sub(2)">
+      Other interesting info
+      </a>
+      <ul class="sub" id="sub2">
+        <li><a href="#favscacbyvasbyph">Fixed acidity and pH</a></li>
+        <li><a href="#dvsfacca">Density, fixed acidity, and citric acid</a></li>
+        <li><a href="#alcohol_desnity">Effect of alcohol on density</a></li>
+        <li><a href="#comparison">Alcohol, fixed acidity, and density</a></li>
+        <li><a href="#sugar_dens">Residual sugar and density</a></li>
+        <li><a href="#fsdvstsd">Free sulfur dioxide vs. total</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="javascript:void(0);" onclick="show_sub(3)">
+      Back to real work
+      </a>
+      <ul class="sub" id="sub3">
+        <li><a href="#vavsca">Volatile acidity vs. citric acid</a></li>
+        <li><a href="#pH.groups.rev">pH groups colored by quality</a></li>
+        <li><a href="#medqualcohol">Median quality and alcohol</a></li>
+        <li><a href="#medquvacid">Median quality and volatile acidity</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="javascript:void(0);" onclick="show_sub(4)">
+      Predictions
+      </a>
+      <ul class="sub" id="sub4">
+        <li><a href="#linearregression">Linear regression</a></li>
+        <li><a href="#svm">Support Vector Machine</a></li>
+        <li><a href="#new_df">Testing our SVM</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="javascript:void(0);" onclick="show_sub(5)">
+      Final Plots
+      </a>
+      <ul class="sub" id="sub5">
+        <li><a href="#p1">Median quality vs. alcohol </a></li>
+        <li><a href="#p2">Median quality vs. volatile acidity </a></li>
+        <li><a href="#p3">Volatile acidity vs. citric acid </a></li>
+      </ul>
+    </li>
+    <li><a href="#reflections">Reflections</a></li>
+    <li><a href="#citation">Citation</a></li>
+    <li><a href="#resources">Resources</a></li>
+  </ul>
+</div>
+<div style="float: right; width: 74%">
+```{r, echo=FALSE}
+suppressMessages(library('ggplot2'))
+suppressMessages(library('GGally'))
+suppressMessages(library('scales'))
+suppressMessages(library('memisc'))
+suppressMessages(library('dplyr'))
+suppressMessages(library('gridExtra'))
+suppressMessages(library('RColorBrewer'))
+suppressMessages(library('e1071'))
+setwd('/home/hmallah/data_analysis/R/')
+wine=read.csv('wineQualityReds.csv')
+wine$X=NULL
+```
+<h2>Getting to know the data</h2>
+In this project we'll be exploring some chemical ingredients of red wine, and 
+how does these affect the quality of our wine. 
+
+First of all let's check out what are these ingredients, by looking at the 
+column names and their types.
+```{r}
+names(wine)
+str(wine)
+```
+<a name="counts_by_qualities"></a>
+<h2>Plot and explore</h2>
+<h5>Counts by qualities</h5>
+Let's now look at how many wines of each quality do we have, we can notice 
+that the most quality we have in our data is quality 5 with 681 wines, and 
+the second is quality 6 with 638. <br />
+Then we have 199 wines of quality 7, 53 of 4, 10 of 3 and 18 of 8.
+<br /><br />
+So basically most of our wines lie between qality 5 and 6. 
+```{r}
+ggplot(aes(x=quality), data=wine)+
+  geom_histogram(binwidth=.1, fill='blue')+
+  scale_x_continuous(breaks=c(3:8))+
+  scale_y_continuous(breaks=seq(0, 700, 50))+
+  ggtitle('Wine Quality Counts')
+```
+<br />
+<a name="ggpairs"></a>
+<h5>GGPairs plot to examine our variables against each others</h5>
+I would like to start by exploring what are the relationships between the 
+variables in my data. Best thing to do that is to explore our data using 
+ggpairs function in the GGally library.
+```{r}
+ggpairs(wine,  binwidth=1)+
+  theme(panel.border = 
+          element_rect(linetype = "dashed", colour = "blue", fill = NA))
+```
+<br />
+Looking at the output generated by ggpairs function, we can notice that the 
+wine quality is somewhat positively related to the amount of alcohol, that's 
+why looking at the scatterplot for variables alcohol and quality we can see 
+the points moving a bit to the right (higher alcohol percentage) as we 
+move up towards a better quality.
+<br /><br />
+Another thing we notice is that quality is somewhat negatively related to 
+volatile.acidity that's why the points move a bit left whenever the 
+quality goes higher.
+<br /><br />
+Other than these 2 variables nothing seems to be really affecting quality in 
+our variables, or at least not as much as alcohol and volatile acidity.
+<br /><br />
+We'll have to explore more...
+<br /><br />
+Before continuing, I want to create a new column in our data set, which is the 
+same as the quality column but as a factor.
+```{r}
+wine$quality.factor=factor(wine$quality)
+```
+<br /><br />
+<a name="alcohol_counts"></a>
+<h5>Looking into alcohol counts</h5>
+```{r}
+ggplot(aes(x=round(alcohol, digits=1)), data=wine)+
+  geom_bar(binwidth=.1, fill='blue')+
+  scale_x_continuous(limits=c(9, 13.7), breaks=seq(9, 13.7, .1))+
+  scale_y_continuous(limits=c(0, 140), breaks=seq(0, 140, 10))+
+  xlab('Alcohol round to 1 digit after the decimal')+
+  ggtitle('Wine by Alcohol Counts')
+```
+<br />
+I rounded the alcohol percentage to 1 digit after the decimal, because we have 
+some wines with many digits after the decimal.<br />
+We can see that most of our alcohols are in the range of 9.2% and 11.2% of
+alcohol. The highest count is for alcohol 9.4% with 139 wines.
+<br /><br />
+<a name="pH"></a>
+<h5>Looking into pH</h5>
+An interesting thing that I would like to do, is look at how our wines are 
+separated by pH. Let's first create groups of pH, in intervals of .5 and 
+check how much each group will contain.
+```{r}
+wine$pH.groups=cut(wine$pH, breaks=c(2.5, 3, 3.5, 4, 4.5))
+ggplot(aes(x=pH.groups), data=wine)+
+  geom_histogram(fill='blue', width=1)+
+  scale_y_continuous(breaks=seq(0, 1400, 50))
+```
+Looking at the plot, we can easily notice that most of our wines have pH 
+between 3 and 3.5. With less than 50 wines between 2.5 and 3, about 1390 lie 
+between 3 and 3.5, 160 in the 3.5-5 group, 1 or 2 in the 4-4.5. Most of 
+our wines are well acidic.
+<br /><br />
+<a name="qvsabyva"></a>
+<h5>Quality vs. alcohol colored by volatile acidity</h5>
+We noticed before that the quality is mostly affected by the amount of alcohol 
+in the wine, and volatile acidity. Let's explore these 2 variables in a plot.
+```{r}
+ggplot(aes(x=alcohol, y=quality, color=volatile.acidity),
+       data=wine)+
+  geom_point(size=4, position="jitter")+
+  scale_color_gradient(low="#1d0000", name="Volatile Acidity", high="#ff6161")+
+  ggtitle('Quality vs. Alcohol colored by Volatile Acidity')
+```
+Looking at the plot, this somehow proves what we noticed before. As we can see,
+quality gets higher as the points move a bit right towards higher alcohol
+percentage, the other thing we should notice, is that the higher the quality
+goes the less clear red points that we see, which means that volatile acidity
+is getting lower on higher qualities.
+<br /><br />
+<a name="favscacbyvasbyph"></a>
+<h2>Some interesting info</h2>
+Checking ggpairs output again, I noticed 2 things, fixed acidity is mostly
+affected by citric acid, that's logical, what we can also see is that citric
+acid is affected by sulphates, and what intrigued me more, is how much
+density is affected by fixed acidity, so let's take a closer look into these.
+<br />
+<h5>
+Fixed acidity vs. citric acid colored by volatile acidity sized by pH
+</h5>
+```{r}
+ggplot(aes(x=citric.acid, y=fixed.acidity, 
+           color=volatile.acidity, size=pH), data=wine)+
+  geom_jitter()+
+  scale_y_continuous(limits=c(5,12), breaks=seq(5,12,1))+
+  scale_x_continuous(limits=c(0, 0.75))+
+  scale_color_gradient(low="#1d0000", name="Volatile Acidity", high="#ff6161")+
+  scale_size(name="pH", range = c(2, 8))+
+  ggtitle('Fixed Acidity vs. Citric Acid 
+          Colored by Volatile Acidity Sized by pH')
+```
+In this plot we can see how fixed acidity increases with citric acid, we can 
+also notice that the points get darker and smaller citric acid and fixed acidity
+increase. This means that our pH is getting lower, more acidic, as these 
+variables increase, and that our volatile acidity is decreasing.
+<br />
+The 2 warnings we've got is because of the limiting the x-axis to be between 
+0 and 0.75 and y-axis between 5 and 12. I did that to be able to zoom in on the 
+area that is most interesting of the plot.
+<br /><br />
+<a name="dvsfacca"></a>
+<h5>Density vs. fixed acidity colored by citric acid</h5>
+```{r}
+ggplot(aes(x=fixed.acidity, y=density, color=citric.acid), data=wine)+
+  geom_jitter(size=3)+
+  geom_smooth(method='loess')+
+  scale_color_gradient(low="#1d0000", name="Citric Acid", high="#ff6161")+
+  ggtitle('Density vs. Fixed Acidity')
+```
+As we notice, from the points and the smooth line, density is visibly positively
+correlated, and as we knew from the plot before, fixed acidity is affected
+mostly by citric acid. Here we can see all of this, we can see that density is
+getting higher as fixed acidity increases and we can see that the points are 
+moving towards clear red, higher citric acid, as these 2 variables increase. 
+<br /><br />
+<a name="alcohol_desnity"></a>
+<h5>How is density affected by alcohol</h5>
+On the other hand, again looking at the ggpairs output, we can notice that 
+desnity is negatively related to alcohol, so the higher the alcohol the lower
+the density. Let's look into that.
+```{r}
+ggplot(aes(x=alcohol, y=density), data=wine)+
+  geom_line(stat='summary', fun.y=median, color='blue')+
+  geom_smooth(method="loess")+
+  ggtitle('Density vs. Alcohol')
+```
+As we said before, we can notice in this plot how the density is decreasing as
+alcohol percentage is going up. By using, "fun.y=median", we're telling R to 
+plot the median of each alcohol level, so for each alcohol level, R groups them
+and extracts their median density and plots it. Using this way we might lose 
+some points, but we remove over plotting to be able to read our plot.
+<br />
+<a name="comparison"></a>
+<h5>Comparing how density is affected by alcohol and fixed acidity</h5>
+```{r}
+p1=ggplot(aes(x=alcohol, y=density), data=wine)+
+  geom_line(stat='summary', fun.y=median, color='blue')+
+  ggtitle('Density vs. Alcohol (blue) - Density vs. Fixed Acidity (red)')
+p2=ggplot(aes(x=fixed.acidity, y=density), data=wine)+
+  geom_line(color='red', stat='summary', fun.y=median)
+
+grid.arrange(p1, p2, ncol=1)
+
+```
+<br /><br />
+Here we can clearly see how density is mostly going up as fixed acidity 
+increases (Red line), and how density is going down as alcohol is increasing
+(Blue line).  By using, "fun.y=median", we're telling R to 
+plot the median of each x variable (alchol and fixed.acidity), so for each 
+x variable value, R groups the densities extracts their median and plots it.
+<br /><br />
+<a name="sugar_dens"></a>
+<h5>Residual sugar effect on density</h5>
+```{r}
+ggplot(aes(x=residual.sugar, y=density), data=subset(wine, residual.sugar<=4))+
+  geom_point()+
+  scale_x_continuous(breaks=seq(0, 4, .1))+
+  geom_smooth(method='loess')+
+  ggtitle('Density vs. Residual Sugar')
+```
+<br /><br />
+Density is also positively affected by residual sugars. I took a subset of our 
+data where residual.sugar is less than or equal to 4, that's just because that's 
+where all the action is going on.
+<br /><br />
+<a name="fsdvstsd"></a>
+<h5>Free sulfur dioxided vs. total sulfur dioxide</h5>
+One last thing I would like to look at is free sulfur dioxide
+against total sulfur dioxide. According to 
+<a href="http://www.brsquared.org/wine/Articles/SO2/SO2.htm" target="_blank">
+this article
+</a> sulfur dioxide is an important ingredient that existed since the beggining
+of time of wine. So let's take a look into that.
+<br />
+```{r}
+ggplot(aes(x=free.sulfur.dioxide, y=total.sulfur.dioxide, 
+           color=quality.factor), 
+       data=subset(wine, free.sulfur.dioxide<=55 & total.sulfur.dioxide<=150))+
+  geom_point()+
+  scale_color_manual(values=rev(brewer.pal(9, "Blues")), name="Quality")+
+  scale_size_discrete(name="Quality")+
+  ggtitle('Total Sulfur Dioxide vs. Free Sulfur Dioxide, 
+          Colored and Sized by Quality')
+```
+Looking at the plot above, for sure we see that total sulfur dioxide is 
+increasing as free sulfur dioxide increases, that's logical. But I don't really 
+think that sulfur dioxide is linked to quality, it's true that it actually acts 
+as a wine conservative, but it doesn't have direct effect on wine quality. 
+Maybe with age it does...
+<br /><br />
+<a name="vavsca"></a>
+<h2>Back to real work</h2>
+Enough wondering around, let's get back to quality exploration.
+<br /><br />
+<h5>Volatile acidity vs. citric acid, colored and sized by quality</h5>
+I was wondering why are volatile acidity and citric acid negative correlated, so
+I did some research online to understand. I ended up understading that a wine 
+with a low acidity is considered as boring, and one is very high acidity will 
+lead to a sour wine. That's why wine makers have to know how to balance the 
+acidity of the wine by balancing these 2 acids, volatile and citric.
+<br />
+<a href="http://winemakersacademy.com/understanding-wine-acidity/" 
+  target="_blank">
+Article link
+</a>
+<br />
+Here's a plot to show us the relation between citric and volatile acidity:
+<br />
+```{r}
+ggplot(aes(x=volatile.acidity, y=citric.acid, 
+           color=quality.factor),
+       data=subset(wine, volatile.acidity>=.2 & volatile.acidity<=1.2))+
+  geom_point(stat='summary', fun.y=median)+
+  scale_color_manual(values=rev(brewer.pal(9, "Blues")), name="Quality")+
+  scale_size_discrete(name="Quality")+
+  scale_x_continuous(breaks=seq(0.2, 1.2, .2))+
+  ggtitle('Volatile Acidity vs. Citric Acid, colored and sized by Quality')
+```
+In the plot we can notice that the points are mostly following a descending 
+curve, most of the wines are on the curve, what we can also notice that when 
+some points are going out of the curve, over the curve, their quality is going 
+gradually lower.
+<br /><br />
+<a name="pH.groups.rev"></a>
+<h5>Revisit pH.groups plot, color by quality</h5>
+Let's see if we can prove this, by relooking at the plot we did above for our 
+pH.groups but this time, let's add color by quality to it, let's see where do 
+most higher quality wines fall.
+<br />
+```{r}
+ggplot(aes(x=pH, fill=quality.factor, color=quality.factor), data=wine)+
+  geom_density(aes(alpha=.7))+
+  scale_x_continuous(breaks=seq(2.7, 4, .1))+
+  scale_y_continuous(breaks=seq(0, 1400, 50))
+```
+<br />
+That's interesting, well most of our wines, fall in the pH group 3, 3.5 
+(mid-acidic), but 
+what's really interesting is that this same group contains the most wines of 
+quality 7 and 8. What we can also notice is that, wine 3, and 4 has the highest 
+pH while quality 7 and 8 have the lowest respectively.
+<a name="medqualcohol"></a>
+<h5>Median quality vs. alcohol</h5>
+Let's look in another way on how alcohol affects the quality of wines.
+```{r}
+wine_by_alcohol=wine %>% group_by(alcohol) %>% 
+  summarize(median_quality=median(quality))%>%arrange(median_quality)
+
+ggplot(aes(x=alcohol, y=median_quality), data=wine_by_alcohol)+
+  geom_point()+
+  geom_smooth(method='loess')+
+  ggtitle('Median Quality vs. Alcohol')
+```
+<br />
+Looking at the above graph, and the median by alcohol, we can notice that 
+quality goes up with alcohol, but to a certain extent. Basically what we 
+can notice is that quality starts to go up with 10% alcohol and stays 
+increasing till about alcohol percentage of 13.2 then starts going back down. I
+think this is an interesting trend in the data.
+<br /><br />
+<a name="medquvacid"></a>
+<h5>Median quality vs. volatile acidity</h5>
+Now let's take a closer look at volatile acidity alone, see what we can deduce.
+```{r}
+ggplot(aes(x=volatile.acidity , y=quality), data=wine)+
+  geom_point(stat="summary", fun.y=median)+
+  geom_smooth(method='loess')+
+  ggtitle('Median Quality vs. Volatile acidity')
+```
+The above plot, and median quality by volatile acidity, shows us what we already
+thought. Quality is negatively correlated to volatile acidity. The median 
+quality is going down from about 6.3 till about 3.4 as volatile acidity 
+goes up from about 0.1 till 1.6
+<br /><br />
+<a name="linearregression"></a>
+<h2>Trying to predict</h2>
+Finally I would like to try the data we have to predict the wine quality, we'll 
+try two models, and see what we get. First of all I'll change pH into a factor, 
+because I want my model to consider it as a factor and not a float.
+<br /><br />
+<h5>Linear Regression Model</h5>
+Our first model will be the linear regression model, then we'll plot our
+predictions against the actual quality of each wine:
+<br /><br />
+Let's first define 3 functions that will help us test the accuracy of our model.
+<br />First function "prediction_testing_and_group" will take a dataframe as a 
+parameter, in this dataframe it will add a column quality.prediction.equal which
+will be True if our prediction is correct, and false if not. Then this function 
+will create a new dataframe which is created by grouping the provided dataframe 
+by quality, quality.prediction, and quality.prediction.equal, and an addition 
+column named counts which is the count of items in this group.
+<br />
+Second function will plot False and True predcitions and size them by their 
+counts.
+<br />
+Third function will calculate accuracy.
+```{r}
+prediction_test_and_group=function(df){
+  df$quality.prediction.equal=
+    ifelse(df$quality==
+            df$quality.prediction, TRUE, FALSE)
+  df$quality.prediction.equal=
+    factor(df$quality.prediction.equal)
+  
+  return_df=df%>%group_by(quality.factor, quality.prediction, 
+                          quality.prediction.equal)%>%summarize(counts=n())
+  
+}
+
+plot_predictions=function(df, title){
+  ggplot(aes(x=quality.factor, y=quality.prediction, 
+           color=quality.prediction.equal, size=counts), 
+       data=df)+
+  geom_point()+
+  ylab('predicted quality')+
+  ggtitle(title)
+}
+
+calculate_accuracy=function(df, total_count){
+  (sum(
+  subset(df, quality.prediction.equal==TRUE)$counts)
+ /total_count)*100
+}
+```
+<br />
+Now the first model:
+<br />
+```{r}
+wine$pH.factor=factor(wine$pH)
+m1=lm(quality ~ alcohol, data=wine)
+m2=update(m1, ~ . + volatile.acidity)
+m3=update(m2, ~ . + sulphates)
+m4=update(m3, ~ . + citric.acid)
+m5=update(m4, ~ . + total.sulfur.dioxide)
+m6=update(m5, ~ . + density)
+m7=update(m6, ~ . + chlorides)
+m8=update(m7, ~ . + fixed.acidity)
+m9=update(m8, ~ . + pH)
+mtable(m1, m2, m3, m4, m5, m7, m8, m9)
+wine$quality.prediction=round(fitted(m9))
+wine_by_quality_and_pred=prediction_test_and_group(wine)
+  
+plot_predictions(wine_by_quality_and_pred, 
+                 "Predicted Quality (Linear Regression Model) vs. 
+                 Actual Quality")
+
+calculate_accuracy(wine_by_quality_and_pred, length(wine$quality.prediction))
+```
+As we can see above, we created a linear regression model, then created a new 
+variable in our data frame, quality.prediction, and quality.prediction.equal 
+which is True if the predicted quality is equal to the actual quality, 
+and false if not. We then create a new dataframe, by grouping our data on 
+quality, quality.prediction and quality.prediction.equal, then we summarize to
+get the count of data in each of these groups. Then we plot these.<br />
+Looking at the plot we can notice the blue points, these are the correct 
+predictions. We can notice that on actual quality 3 red points on 4, 5, and 6 
+these points are about the same size, 
+this means that all of our predictions for quality 3 were wrong. For quality 4 
+we have a small blue point which is the small number of wines that we correctly
+predicted to be of level 4, then we see 2 red points on 5 and 6 these are the 
+wines of actual quality 4, that we predicted as being 5 or 6. 
+For qualities 5 and 6 things get better. We can 
+notice that the blue points are much bigger than the other red points which 
+means that we did well for these qualities. We didn't do that good for quality 7
+as we can see the point we have on predicted quality 7 is smaller than the point 
+at 6. And at last we didn't get any correct prediction for quality 8.
+<br /><br />
+We have an R2 of 0.358. And calculating the accuracy we have by summing up the 
+number of correct predictions then dividing by the total count of our data 1599, 
+then multiplying by 100 we see that we have and accuracy level of 59.29%.
+<br /><br />
+<a name="svm"></a>
+<h5>SVM - Support Vector Machine</h5>
+Let's try another model, and see how well can we do. This model will be the SVM 
+model (Support Vector Machine). for this model, I'll change quality to factor 
+too, I want my model to be a classification model because actually quality 
+isn't an integer but a classification. Let's see what we get:
+```{r}
+#Let's first drop the columns that we don't need anymore.
+wine$pH.groups=NULL
+wine$quality.prediction=NULL
+wine$quality.prediction.equal=NULL
+wine$pH.factor=NULL
+model = svm(quality.factor~., data = wine)
+wine$quality.prediction=fitted(model)
+wine_by_quality_and_pred=prediction_test_and_group(wine)
+summary(model)
+plot_predictions(wine_by_quality_and_pred, 
+                 "Predicted Quality (SVM) vs. Actual Quality")
+
+calculate_accuracy(wine_by_quality_and_pred, length(wine$quality.prediction))
+```
+Doing the same thing for our SVM as we did for our regression model. We can see
+a VERY big difference in our predictions. 99.5% accuracy! Looking at the graph 
+we can barely see a red point indicating few wrong predictions.
+<br /><br />
+Let's try playing a bit with our features with respect to the stuff we studied
+above, let's see if we can increase our model's score. Here we go:
+```{r}
+feature_cols=c('alcohol', 'volatile.acidity', 'citric.acid', 
+               'total.sulfur.dioxide', 'density', 'quality.factor', 'quality')
+wine_for_svm=wine[,(names(wine) %in% feature_cols)]
+model = svm(quality.factor~., data = wine_for_svm)
+wine_for_svm$quality.prediction=fitted(model)
+wine_by_quality_and_pred=prediction_test_and_group(wine_for_svm)
+plot_predictions(wine_by_quality_and_pred, 
+                 "Predicted Quality (SVM) vs. Actual Quality")
+```
+<br />
+No more "False" predictions, that's a 100% accuracy, as good as it can get!
+```{r}
+calculate_accuracy(wine_by_quality_and_pred, length(wine$quality.prediction))
+```
+<br />
+Changing the features we use by removing some that aren't really correlated to 
+our quality, we increased our models accuracy to the maximum. 
+Now let's not be over excited, let's test our model.
+<br /><br />
+<a name="new_df"></a>
+<h5>Testing SVM on another data list</h5>
+Since most of our data lies between qualities 5 and 6 as we've seen 
+in the first section of this report, we have 1319 in these 2 qualities (82.5% 
+of our data). We can't really say that we can totally rely on our 100% accuracy,
+so I downloaded another csv file to run my model against it and see what we get.
+<br />file: <br /><br />
+https://onlinecourses.science.psu.edu/stat857/sites/onlinecourses.science.psu.edu.stat857/files/Training50_winedata.csv
+<br /><br />
+I manually deleted the last column, rt.sulfur.dioxide, since we don't have it in
+our original data.
+<br />
+Here we go:
+<br /><br />
+```{r}
+test_data=read.csv('training_wine.csv')
+test_data$X=NULL
+dim(test_data)
+str(test_data)
+```
+That's a bit bigger data frame, than our actual data, but we have the same 
+fields list in it as we can see above. Let's go, let's first take out all the 
+fields that aren't in our model, and create the ones that are, but not in the 
+orginal data. Then we can test.
+<br /><br />
+Let's just take a quick look at the quality distribution of the dataset, and 
+then go on with our testing.
+```{r}
+ggplot(aes(x=quality), data=test_data)+
+  geom_histogram(binwidth=.1, fill='blue')+
+  scale_x_continuous(breaks=c(3:9))+
+  scale_y_continuous(breaks=seq(0, 950, 50))+
+  ggtitle('Test Data Wine Quality Counts')
+```
+Well there isn't a big difference in the distribution of this dataset, We have a
+bit less 3, 4 and 5 qualities. It has about 1.5 more 6 quality, about double 
+quality 7, a bit more in 8 quality and a small number of 9's.
+```{r}
+test_data$quality.factor=factor(test_data$quality)
+test_data=test_data[,(names(test_data) %in% feature_cols)]
+
+test_data$quality.prediction=predict(model, test_data)
+test_data_by_quality_and_pred=prediction_test_and_group(test_data)
+plot_predictions(test_data_by_quality_and_pred, 
+                 "Predicted Quality (SVM) vs. Actual Quality")
+```
+<br />
+Interesting! Looking at the plot we can also barely see the red points, we see 
+more than the plot before, but it is still not a lot. Let's see how much is our 
+accuracy on this test data.
+```{r}
+calculate_accuracy(test_data_by_quality_and_pred, 
+                   length(test_data$quality.prediction))
+```
+Here we go, a nice 89.35% accuracy, that's lower than the 100% we got on our 
+actual data, but that's still high. Well I really didn't expect that!
+<br /><br />
+<a name="p1"></a>
+<h2>Final Plots</h2>
+There are 3 plots I would like to revisit, apply some tweaking to them to make 
+them look better, I am revisiting these 3 plots because I think they are the 3 
+most important ones in our study.
+<h5>Plot 1: Median quality vs. alcohol </h5>
+```{r}
+ggplot(aes(x=quality.factor, y=alcohol, color=quality.factor), data=wine)+
+  geom_boxplot()+
+  scale_color_manual(values=rev(brewer.pal(9, "Blues")), 
+                     name="Quality (classifier)")+
+  ylab('Alcohol (% by volume)')+
+  xlab('Quality (Classifier)')+
+  ggtitle('Alcohol vs. Median Quality')
+```
+Looking at this plot, we notice that quality 3 has maximum alcohol of about 11,
+and its median is a bit less than 10, then quality 4 goes up to about 13, median
+at 10, then we notice that qualities 5 to 8 go to higher levels, and the mean is
+gradually incrementing between qualities 6, 7 and 8. At the same time we see 
+that it is not a rule of thumb that higher alcohol always means better quality, 
+looking at the plot we see that only quality 5 goes over 14% alcohol, at the 
+same time we can see that some wines with qualities 7 and 8 go down to about 6% 
+and 9% of alcohol respectively. So the rule is not too much alcohol, and too low
+alcohol, best is between 9% and 14%.
+<br /><br />
+<a name="p2"></a>
+<h5>Plot 2: Median quality vs. volatile acidity  </h5>
+```{r}
+ggplot(aes(x=quality.factor, y=volatile.acidity, color=quality.factor),
+       data=wine)+
+  geom_boxplot()+
+  scale_color_manual(values=rev(brewer.pal(9, "Blues")), 
+                     name="Quality (classifier)")+
+  xlab('Quality (Classifier)')+
+  ylab('Volatile Acidity (g / dm^3)')+
+  ggtitle('Volatile acidity vs. Quality')
+```
+Well at first look, we can see that the only quality that goes the highest is 3, 
+so we can directly say too much volatile acidity is bad for wine. Second highest
+is 5, we can say that to go to high levels we have to have volatile acidity 
+lower than 1 g/dm^3, and the best levels are between 0.25 and 0.85 g/dm^3. What 
+is most explanatory in this plot is that as quality goes up we can see the 
+median lines of the boxes going down gradually looking like a staircase. 
+<br /><br />
+<a name="p3"></a>
+<h5>Plot 3: Volatile acidity vs. citric acid</h5>
+```{r}
+ggplot(aes(x=volatile.acidity, y=citric.acid,
+           color=quality.factor),
+       data=subset(wine, volatile.acidity>=.2 & volatile.acidity<=1.2))+
+  geom_point(stat='summary', fun.y=median)+
+  scale_x_continuous(breaks=seq(0.2, 1.2, .2))+
+  scale_size_discrete(guide = guide_legend(title = 'Quality (classifier)'))+
+  scale_color_manual(values=rev(brewer.pal(9, 'Blues')),
+    guide = guide_legend(title = 'Quality (classifier)'))+
+  ylab('Citric Acid (g / dm^3)')+
+  xlab('Volatile Acidity (g / dm^3)')+
+  ggtitle('Volatile Acidity vs. Citric Acid, 
+          colored, sized by Quality')
+```
+As we said before, and we can see it more here, in this plot we notice
+the points gruadually descending mostly following some sort of a descending 
+curve what we can also notice that when some points are going out of the curve, 
+over the curve, their quality is going lower, especially when volatile
+acidity is high as soon as citric acid is higher, quality goes down 
+significantly.
+<a name="reflections"></a>
+<h2>Reflections</h2>
+The first thing I wan to say here is that next time I drink a good wine, I'll be 
+very grateful! Seems like the process of making wine is a very sensitive 
+process!
+<br />
+Although we have some features that are somewhat correlated to the wine quality,
+I never thought we can attain an accuracy of 89.5%, especially that the 
+qualities aren't too much diversified, and the data set we have isn't that big. 
+I thought that having most our qualitiesbetween 5 and 6 won't help being able to
+predict. But this shows that SVM is areally much better model for classification
+prediction, such as our case now, where quality isn't an actual number but 
+a class...
+<br /><br />
+What is also interesting, and causes struggles, is that looking at the first and 
+second plot of our final plots, we can see that there are so much levels of 
+volatile acidity and alcohol (the features that mostly affect quality) where 
+the wine can be of any quality. Like for example a wine with volatile acidity 
+of 0.8 g/dm^3 and alcohol of 11% can be anywhere between quality 3 and 8! So the
+struggle was to find out what other stuff might help in predicting the quality, 
+like some stuff are not much correlated to quality but if we can, let's say, 
+split the wine between 4 out of 10 qualities then these other features may help 
+us decide in which quality this wine lies between these 4. For example as we can 
+see in third plot if volatile acidity is high, but not so high to really decide 
+what quality this wine could be, we can look at another feature which is citric 
+acid and if it is high, we can say that this wine is between qualities 3 and 5.
+<br /><br />
+An interesting improvement for the data is having wine age in it. It is nice
+to see how and when does age actually affect the wine quality.
+Maybe also where the wine was stored and stuff like that. These information 
+would really be very interesting to discover and play with.
+<br /><br />
+Another improvement is to include more regions in the data. The current data 
+only includes Portuguese "Vinho Verde" wine, including more regions and more 
+wine brands would help in eliminating bias, and including more diverse data.
+<br /><br />
+<a name="citation"></a>
+<h2>Citation:</h2>
+P. Cortez, A. Cerdeira, F. Almeida, T. Matos and J. Reis. 
+<br />Modeling wine preferences by data mining from physicochemical properties.
+<br />In Decision Support Systems, Elsevier, 47(4):547-553. ISSN: 0167-9236.
+<br /><br />
+Available at: [@Elsevier] http://dx.doi.org/10.1016/j.dss.2009.05.016
+<br />[Pre-press (pdf)] http://www3.dsi.uminho.pt/pcortez/winequality09.pdf
+<br />[bib] http://www3.dsi.uminho.pt/pcortez/dss09.bib
+<br /><br />
+<a name="resources"></a>
+<h2>Additional Resources</h2>
+http://www.brsquared.org/wine/Articles/SO2/SO2.htm<br />
+http://winemakersacademy.com/understanding-wine-acidity/<br />
+https://onlinecourses.science.psu.edu/stat857/sites/onlinecourses.science.psu.edu.stat857/files/Training50_winedata.csv
+</div>
